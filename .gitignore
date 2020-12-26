@@ -4,3 +4,4 @@ __pycache__/
 hangman.egg-info
 .env
 .idea/
+.DS_Store
