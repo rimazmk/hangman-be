@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, abort
 from flask_socketio import SocketIO, send, emit
 from flask_redis import FlaskRedis
 from flask_cors import CORS
@@ -13,9 +13,28 @@ CORS(app)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 
-socketio = SocketIO(app, cors_allowed_origins='*')
+socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
+print(socketio)
 redis_client = FlaskRedis(app)
 
+count = 0
+
+@socketio.on('connect')
+def connect():
+    global count
+    count += 1
+    print(count, " connected")
+
+
+@socketio.on('disconnect')
+def disconnect():
+    global count
+    count -= 1
+    print(count, " connected")
+
+# @socketio.on('connect')
+# def hello():
+#     print("client connected")
 
 @socketio.on('message')
 def handle_message(message):
@@ -24,7 +43,6 @@ def handle_message(message):
 
 @socketio.on('guess')
 def handle_change(msg):
-    msg = json.loads(msg)
     gameState = msg['gameState']
     cur = gameState['curGuess']
 
@@ -34,27 +52,36 @@ def handle_change(msg):
         # Frontend prevents user from guessing a previously guessed letter
         for i, (w, g) in enumerate(zip(gameState['word'], gameState['guessedWord'])):
             if w == cur and g == '#':
-                gameState['guessedWord'][i] = cur
+                gameState['guessedWord'] = gameState['guessedWord'][:i] + cur + gameState['guessedWord'][i + 1:]
                 match += 1
 
-        if not match:
+        if match == 0:
             gameState['numIncorrect'] += 1
 
     else:
         gameState['guessedWords'].append(cur)
 
-        if cur != gameState['word']:
+        if cur.lower() != gameState['word'].lower():
             gameState['numIncorrect'] += 1
 
     # TODO: Use variable number of lives
     # TODO: Update wins variable here
-    if cur == gameState['word'] or gameState['numIncorrect'] == 7 or gameState['word'] == gameState['guessedWord']:
-        pass
-    else:
-        pass
+    if cur == gameState['word'] or gameState['numIncorrect'] == 7 or gameState['word'].lower() == gameState['guessedWord'].lower():
+        gameState['hanger'] = msg['user']
+        gameState['category'] = ""
+        gameState['word'] = ""
+        gameState['guessedLetters'] = [False] * 26
+        gameState['numIncorrect'] = 0
+        gameState['guessedWords'] = []
+        gameState['curGuess'] = ""
+        gameState['guessedWord'] = []
 
-    redis_client.set(msg['roomID'], gameState)
-    emit('game', gameState, broadcast=True)
+    hangPos = gameState['players'].index(gameState['hanger'])
+    guessPos = hangPos + 1 if hangPos != (len(gameState['players']) - 1) else 0
+    gameState['guesser'] = gameState['players'][guessPos]
+
+    redis_client.set(msg['roomID'], json.dumps(gameState))
+    emit('guess', gameState, broadcast=True)
 
 # {
 #    user: username,
@@ -64,33 +91,37 @@ def handle_change(msg):
 
 @socketio.on('join')
 def handle_join(credentials):
-    credentials = json.loads(credentials)
-    username = credentials['username']
+    username = credentials['user']
     roomID = credentials['roomID']
     game_state = json.loads(redis_client.get(roomID))
 
+    # TODO: handle disconnected player in else
     if game_state['gameStart'] == False:
+        # TODO: account for existing username
         game_state['players'].append(username)
-        redis_client.set(roomID,json.dumps(game_state))
-        emit('joined',redis_client.get(roomID))
+        redis_client.set(roomID, json.dumps(game_state))
+        emit('joined', redis_client.get(roomID))
 
+@socketio.on('start')
+def handle_start(start_msg):
+    roomID = start_msg['roomID']
+    game_state = json.loads(redis_client.get(roomID))
+    game_state['gameStart'] = True
+    redis_client.set(roomID, json.dumps(game_state))
+    emit('started', redis_client.get(roomID))
 
-@app.route("/<code>",methods=['GET','POST'])
-def join_game(code):
-    # return game state 
-    if redis.get(code) != '(nil)':
-        emit('game', redis_client.get(code))
+@app.route("/", methods=['GET','POST'])
+def show_index():
+    return "hello"
 
-@app.route("/create", methods=["POST"])
+@socketio.on("create")
 def create_game(request):
     # print("Creating room with params ", request)
     roomID = ''.join(random.choices(string.ascii_uppercase +
                                     string.digits, k=10))
-    while redis_client.get(roomID) == '(nil)':
+    while redis_client.exists(roomID):
         roomID = ''.join(random.choices(string.ascii_uppercase +
                                         string.digits, k=10))
-
-    request = json.loads(request)
 
     # TODO: Get word and category input at game screen
     defGameState = {'players': [request['username']],
@@ -107,16 +138,20 @@ def create_game(request):
                     }
 
     redis_client.set(roomID, json.dumps(defGameState))
+    # print(roomID, redis_client.exists(roomID))
     url = f"http://localhost:3000/{roomID}/"
-    emit('link', url)
 
+    response = {'gameState': defGameState, 'url': url}
+    emit('link', response)
 
+@app.route("/room/<code>/", methods=['GET'])
+def get_state(code):
+    # print("received get request", code)
+    if redis_client.exists(code):
+        # print(redis_client.get(code))
+        return json.loads(redis_client.get(code))
 
-@app.route("/", methods=['GET','POST'])
-def show_index():
-    return "hello"
+    return abort(404)
 
-
-
-if __name__ == '__main__':
-    socketio.run(app)
+# if __name__ == '__main__':
+#     socketio.run(app)
