@@ -63,19 +63,21 @@ def handle_change(msg):
 # }
 
 @socketio.on('join')
-def handle_join(credentials){
+def handle_join(credentials):
     credentials = json.loads(credentials)
     username = credentials['username']
     roomID = credentials['roomID']
     game_state = json.loads(redis_client.get(roomID))
+
     if game_state['gameStart'] == False:
         game_state['players'].append(username)
         redis_client.set(roomID,json.dumps(game_state))
-}
+        emit('joined',redis_client.get(roomID))
+
 
 @app.route("/<code>",methods=['GET','POST'])
 def join_game(code):
-    # functionality to take a user from home screen and put them in game
+    # return game state 
     if redis.get(code) != '(nil)':
         emit('game', redis_client.get(code))
 
