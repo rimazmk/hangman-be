@@ -1,4 +1,4 @@
-from flask import Flask, abort
+from flask import Flask, abort, request
 from flask_socketio import SocketIO, send, emit
 from flask_redis import FlaskRedis
 from flask_cors import CORS
@@ -100,7 +100,7 @@ def handle_join(credentials):
         # TODO: account for existing username
         game_state['players'].append(username)
         redis_client.set(roomID, json.dumps(game_state))
-        emit('joined', redis_client.get(roomID))
+        emit('join', redis_client.get(roomID))
 
 @socketio.on('start')
 def handle_start(start_msg):
@@ -108,11 +108,16 @@ def handle_start(start_msg):
     game_state = json.loads(redis_client.get(roomID))
     game_state['gameStart'] = True
     redis_client.set(roomID, json.dumps(game_state))
-    emit('started', redis_client.get(roomID))
+    emit('start', redis_client.get(roomID))
 
 @app.route("/", methods=['GET','POST'])
 def show_index():
-    return "hello"
+    roomID = request.args.get("roomID", default="", type=str)
+
+    if roomID and redis_client.exists(roomID):
+        return json.loads(redis_client.get(roomID))
+
+    return abort(404)
 
 @socketio.on("create")
 def create_game(request):
@@ -139,19 +144,10 @@ def create_game(request):
 
     redis_client.set(roomID, json.dumps(defGameState))
     # print(roomID, redis_client.exists(roomID))
-    url = f"http://localhost:3000/{roomID}/"
+    url = f"http://localhost:3000/?roomID={roomID}"
 
     response = {'gameState': defGameState, 'url': url}
     emit('link', response)
 
-@app.route("/room/<code>/", methods=['GET'])
-def get_state(code):
-    # print("received get request", code)
-    if redis_client.exists(code):
-        # print(redis_client.get(code))
-        return json.loads(redis_client.get(code))
-
-    return abort(404)
-
-# if __name__ == '__main__':
-#     socketio.run(app)
+if __name__ == '__main__':
+    socketio.run(app)
