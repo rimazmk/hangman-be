@@ -100,23 +100,21 @@ def handle_join(credentials):
         # TODO: account for existing username
         game_state['players'].append(username)
         redis_client.set(roomID, json.dumps(game_state))
-        emit('join', redis_client.get(roomID))
+        print(f"hello there{redis_client.get(roomID)}")
+        emit('join', json.loads(redis_client.get(roomID)), broadcast=True)
 
 @socketio.on('start')
-def handle_start(start_msg):
-    roomID = start_msg['roomID']
+def handle_start(roomID):
     game_state = json.loads(redis_client.get(roomID))
     game_state['gameStart'] = True
     redis_client.set(roomID, json.dumps(game_state))
-    emit('start', redis_client.get(roomID))
+    emit('start', json.loads(redis_client.get(roomID)), broadcast=True)
 
 @app.route("/", methods=['GET','POST'])
 def show_index():
     roomID = request.args.get("roomID", default="", type=str)
-
     if roomID and redis_client.exists(roomID):
         return json.loads(redis_client.get(roomID))
-
     return abort(404)
 
 @socketio.on("create")
@@ -144,9 +142,9 @@ def create_game(request):
 
     redis_client.set(roomID, json.dumps(defGameState))
     # print(roomID, redis_client.exists(roomID))
-    url = f"http://localhost:3000/?roomID={roomID}"
+    # url = f"http://localhost:3000/?roomID={roomID}"
 
-    response = {'gameState': defGameState, 'url': url}
+    response = {'gameState': defGameState, 'roomID': roomID}
     emit('link', response)
 
 if __name__ == '__main__':
