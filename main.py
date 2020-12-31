@@ -13,7 +13,7 @@ CORS(app)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 
-socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
+socketio = SocketIO(app, cors_allowed_origins='*')
 print(socketio)
 redis_client = FlaskRedis(app)
 
@@ -41,17 +41,35 @@ def handle_message(message):
     # print('received message: ', message)
     emit('response', message)
 
+@socketio.on('newRound')
+def handle_newRound(info):
+    # print('received message: ', message)
+    category = info['category']
+    word = info['word']
+    roomID = info["roomID"]
+    gameState = redis_client.get(roomID)
+    gameState = json.loads(gameState)
+    gameState['word'] = word
+    gameState['category'] = category
+    guessedWord = ['#' if c.isalnum() else c for c in word]
+    gameState['guessedWord'] = ''.join(guessedWord)
+    redis_client.set(roomID, json.dumps(gameState))
+    emit('response', gameState, broadcast=True)
+
 @socketio.on('guess')
-def handle_change(msg):
+def handle_guess(msg):
     gameState = msg['gameState']
     cur = gameState['curGuess']
 
+    print(gameState, cur)
+    print("received guess!")
+
     if len(cur) == 1:
-        gameState['guessedLetters'][ord(cur) - ord('a')] = True
+        gameState['guessedLetters'].append(cur.lower())
         match = 0
         # Frontend prevents user from guessing a previously guessed letter
         for i, (w, g) in enumerate(zip(gameState['word'], gameState['guessedWord'])):
-            if w == cur and g == '#':
+            if w.lower() == cur.lower() and g == '#':
                 gameState['guessedWord'] = gameState['guessedWord'][:i] + cur + gameState['guessedWord'][i + 1:]
                 match += 1
 
@@ -64,21 +82,34 @@ def handle_change(msg):
         if cur.lower() != gameState['word'].lower():
             gameState['numIncorrect'] += 1
 
-    # TODO: Use variable number of lives
     # TODO: Update wins variable here
-    if cur == gameState['word'] or gameState['numIncorrect'] == 7 or gameState['word'].lower() == gameState['guessedWord'].lower():
-        gameState['hanger'] = msg['user']
+    if (cur.lower() == gameState['word'].lower()
+        or gameState['numIncorrect'] == gameState['lives']
+        or gameState['word'].lower() == gameState['guessedWord'].lower()):
+        if gameState["numIncorrect"] == gameState['lives']:
+            hangPos = gameState['players'].index(gameState['hanger'])
+            guessPos = hangPos + 1 if hangPos != (len(gameState['players']) - 1) else 0
+            gameState['guesser'] = gameState['players'][guessPos]
+        else:
+            gameState["hanger"] = msg['user']
+            hangPos = gameState['players'].index(gameState['hanger'])
+            guessPos = hangPos + 1 if hangPos != (len(gameState['players']) - 1) else 0
+            gameState['guesser'] = gameState['players'][guessPos]
+
+        # gameState['word'] = ""
         gameState['category'] = ""
-        gameState['word'] = ""
-        gameState['guessedLetters'] = [False] * 26
+        gameState['guessedLetters'] = []
         gameState['numIncorrect'] = 0
         gameState['guessedWords'] = []
         gameState['curGuess'] = ""
-        gameState['guessedWord'] = []
-
-    hangPos = gameState['players'].index(gameState['hanger'])
-    guessPos = hangPos + 1 if hangPos != (len(gameState['players']) - 1) else 0
-    gameState['guesser'] = gameState['players'][guessPos]
+        gameState['guessedWord'] = ""
+    else:
+        guessPos = gameState['players'].index(gameState['guesser'])
+        hangPos = gameState['players'].index(gameState['hanger'])
+        guessPos = (guessPos + 1) % len(gameState['players'])
+        if guessPos == hangPos:
+            guessPos = (guessPos + 1) % len(gameState['players'])
+        gameState['guesser'] = gameState['players'][guessPos]
 
     redis_client.set(msg['roomID'], json.dumps(gameState))
     emit('guess', gameState, broadcast=True)
@@ -100,15 +131,17 @@ def handle_join(credentials):
         # TODO: account for existing username
         game_state['players'].append(username)
         redis_client.set(roomID, json.dumps(game_state))
-        print(f"hello there{redis_client.get(roomID)}")
         emit('join', json.loads(redis_client.get(roomID)), broadcast=True)
 
 @socketio.on('start')
 def handle_start(roomID):
     game_state = json.loads(redis_client.get(roomID))
     game_state['gameStart'] = True
+    game_state['guesser'] = game_state["players"][1]
+    print(f"here are the players: {game_state['players']}")
     redis_client.set(roomID, json.dumps(game_state))
     emit('start', json.loads(redis_client.get(roomID)), broadcast=True)
+
 
 @app.route("/", methods=['GET','POST'])
 def show_index():
@@ -126,23 +159,25 @@ def create_game(request):
         roomID = ''.join(random.choices(string.ascii_uppercase +
                                         string.digits, k=10))
 
+    guessedWord = ['#' if c.isalnum() else c for c in request['word']]
+
     # TODO: Get word and category input at game screen
     defGameState = {'players': [request['username']],
                     'hanger': request['username'],
                     'category': request['category'],
                     'word': request['word'],
-                    'guessedLetters': [False] * 26,
+                    'guessedLetters': [],
                     'numIncorrect': 0,
+                    'lives': int(request['lives']),
                     'guessedWords': [],
                     'guesser': None,
                     'curGuess': None,
-                    'guessedWord': '#' * len(request['word']),
+                    'guessedWord': ''.join(guessedWord),
                     'gameStart': False,
                     }
 
     redis_client.set(roomID, json.dumps(defGameState))
     # print(roomID, redis_client.exists(roomID))
-    # url = f"http://localhost:3000/?roomID={roomID}"
 
     response = {'gameState': defGameState, 'roomID': roomID}
     emit('link', response)
