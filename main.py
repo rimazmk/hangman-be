@@ -138,7 +138,10 @@ def get_state():
     roomID = request.args.get("roomID", default="", type=str)
     if roomID and redis_client.exists(roomID):
         return json.loads(redis_client.get(roomID))
-    return abort(404)
+    elif roomID and len(roomID) == 10:
+        return abort(404)
+    else:
+        return abort(400)
 
 
 @socketio.on("create")
