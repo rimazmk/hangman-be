@@ -1,5 +1,5 @@
 from flask import Flask, abort, request
-from flask_socketio import SocketIO, close_room, emit, join_room, leave_room
+from flask_socketio import SocketIO, close_room, emit, join_room, leave_room, rooms
 from flask_redis import FlaskRedis
 from flask_cors import CORS
 
@@ -21,7 +21,7 @@ app.config['SECRET_KEY'] = b''.join([
 app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 
 socketio = SocketIO(app, cors_allowed_origins='*')
-redis_client = FlaskRedis(app)
+redis_client = FlaskRedis(app, decode_responses=True)
 
 print(socketio)
 
@@ -39,6 +39,15 @@ def handle_connect():
 def handle_disconnect():
     global count
     count -= 1
+    # print(request.sid, type(request.sid), rooms())
+    room = None
+    for r in rooms():
+        if r != request.sid:
+            room = r
+            break
+
+    on_leave({'user': redis_client.get(request.sid), 'roomID': room, 'sid': request.sid})
+    redis_client.delete(request.sid)
     print(count, " connected")
 
 
@@ -46,13 +55,15 @@ def handle_disconnect():
 def on_leave(data):
     username = data['user']
     roomID = data['roomID']
+    # print(f"ROOMID: {roomID}")
     game_state = json.loads(redis_client.get(roomID))
 
     try:
         game_state['players'].remove(username)
-        leave_room(roomID)
+        leave_room(roomID, data['sid'])
         print(f"{username} has left the room: {roomID}")
     except ValueError:
+        print(f"{username} not found")
         return
 
     redis_client.set(roomID, json.dumps(game_state))
@@ -141,15 +152,13 @@ def handle_join(credentials):
     username = credentials['user']
     roomID = credentials['roomID']
     game_state = json.loads(redis_client.get(roomID))
+    redis_client.set(request.sid, username)
 
-    # TODO: handle disconnected player in else
-    if not game_state['gameStart']:
-        # TODO: account for existing username
-        game_state['players'].append(username)
-        redis_client.set(roomID, json.dumps(game_state))
-        join_room(roomID)
-        print(f"{username} has entered the room: {roomID}")
-        emit('update', game_state, room=roomID)
+    game_state['players'].append(username)
+    redis_client.set(roomID, json.dumps(game_state))
+    join_room(roomID)
+    print(f"{username} has entered the room: {roomID}")
+    emit('update', game_state, room=roomID)
 
 
 @socketio.on('start')
@@ -173,7 +182,7 @@ def get_state():
 
 
 @socketio.on("create")
-def create_game(request):
+def create_game(params):
     while True:
         roomID = ''.join(random.choices(string.ascii_uppercase +
                                         string.digits, k=10))
@@ -181,16 +190,16 @@ def create_game(request):
             break
 
     guessed_word = ''.join(
-        ['#' if c.isalnum() else c for c in request['word']])
+        ['#' if c.isalnum() else c for c in params['word']])
 
     # TODO: Get word and category input at game screen
-    def_game_state = {'players': [request['username']],
-                      'hanger': request['username'],
-                      'category': request['category'],
-                      'word': request['word'],
+    def_game_state = {'players': [params['username']],
+                      'hanger': params['username'],
+                      'category': params['category'],
+                      'word': params['word'],
                       'guessedLetters': [],
                       'numIncorrect': 0,
-                      'lives': int(request['lives']),
+                      'lives': int(params['lives']),
                       'guessedWords': [],
                       'guesser': None,
                       'curGuess': None,
@@ -199,8 +208,9 @@ def create_game(request):
                       'cap': 8
                       }
 
+    redis_client.set(request.sid, params['username'])
     join_room(roomID)
-    print(f"{request['username']} has entered the room: {roomID}")
+    print(f"{params['username']} has entered the room: {roomID}")
 
     redis_client.set(roomID, json.dumps(def_game_state))
     response = {'gameState': def_game_state, 'roomID': roomID}
