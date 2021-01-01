@@ -55,24 +55,41 @@ def handle_disconnect():
 def on_leave(data):
     username = data['user']
     roomID = data['roomID']
-    # print(f"ROOMID: {roomID}")
+    print(f"ROOMID: {roomID}")
     game_state = json.loads(redis_client.get(roomID))
 
-    try:
-        game_state['players'].remove(username)
-        leave_room(roomID, data['sid'])
-        print(f"{username} has left the room: {roomID}")
-    except ValueError:
-        print(f"{username} not found")
-        return
+    def remove():
+        try:
+            game_state['players'].remove(username)
+            leave_room(roomID, data['sid'])
+            print(f"{username} has left the room: {roomID}")
+        except ValueError:
+            print(f"{username} not found")
 
-    redis_client.set(roomID, json.dumps(game_state))
-
-    if not game_state['players']:
+    if len(game_state['players']) == 1:
         close_room(roomID)
         redis_client.delete(roomID)
+        return
+    elif len(game_state['players']) == 2:
+        remove()
+        game_state['hanger'] = game_state['players'][0]
+        game_state['gameStart'] = False
+    elif username == game_state['hanger']:
+        remove()
+        game_state['hanger'] = game_state['players'][0]
+        game_state['guesser'] = game_state['players'][1]
+    elif username == game_state['guesser']:
+        guess_pos = game_state['players'].index(game_state['guesser'])
+        next = (guess_pos + 1) % len(game_state['players'])
+        jump = (next + 1) % len(game_state['players'])
+        guess_pos = next if game_state['hanger'] != game_state['players'][next] else jump
+        game_state['guesser'] = game_state['players'][guess_pos]
+        remove()
     else:
-        emit('leave', game_state, room=roomID)
+        remove()
+
+    redis_client.set(roomID, json.dumps(game_state))
+    emit('leave', game_state, room=roomID)
 
 
 @socketio.on('joinRoom')
