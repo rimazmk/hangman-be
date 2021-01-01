@@ -82,6 +82,7 @@ def on_leave(data):
         remove()
         game_state['hanger'] = game_state['players'][0]
         game_state['guesser'] = game_state['players'][1]
+        game_state['word'] = game_state['category'] = ""
     elif username == game_state['guesser']:
         guess_pos = game_state['players'].index(game_state['guesser'])
         next = (guess_pos + 1) % len(game_state['players'])
@@ -210,21 +211,21 @@ def create_game(params):
         if not redis_client.exists(roomID):
             break
 
-    guessed_word = ''.join(
-        ['#' if c.isalnum() else c for c in params['word']])
+    # guessed_word = ''.join(
+    #     ['#' if c.isalnum() else c for c in params['word']])
 
     # TODO: Get word and category input at game screen
     def_game_state = {'players': [params['username']],
                       'hanger': params['username'],
-                      'category': params['category'],
-                      'word': params['word'],
+                      'category': "",
+                      'word': "",
                       'guessedLetters': [],
                       'numIncorrect': 0,
                       'lives': int(params['lives']),
                       'guessedWords': [],
-                      'guesser': None,
-                      'curGuess': None,
-                      'guessedWord': guessed_word,
+                      'guesser': "",
+                      'curGuess': "",
+                      'guessedWord': "",
                       'gameStart': False,
                       'cap': 8
                       }
