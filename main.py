@@ -56,7 +56,11 @@ def on_leave(data):
     username = data['user']
     roomID = data['roomID']
     print(f"ROOMID: {roomID}")
-    game_state = json.loads(redis_client.get(roomID))
+
+    if roomID:
+        game_state = json.loads(redis_client.get(roomID))
+    else:
+        return
 
     def remove():
         try:
