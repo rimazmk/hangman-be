@@ -1,5 +1,5 @@
 from flask import Flask, abort, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, close_room, emit, join_room, leave_room
 from flask_redis import FlaskRedis
 from flask_cors import CORS
 
@@ -42,6 +42,33 @@ def handle_disconnect():
     print(count, " connected")
 
 
+@socketio.on('leave')
+def on_leave(data):
+    username = data['user']
+    roomID = data['roomID']
+    game_state = json.loads(redis_client.get(roomID))
+
+    try:
+        game_state['players'].remove(username)
+        leave_room(roomID)
+        print(f"{username} has left the room: {roomID}")
+    except ValueError:
+        return
+
+    redis_client.set(roomID, json.dumps(game_state))
+
+    if not game_state['players']:
+        close_room(roomID)
+        redis_client.delete(roomID)
+    else:
+        emit('leave', game_state, room=roomID)
+
+
+@socketio.on('joinRoom')
+def handle_join_room(roomID):
+    join_room(roomID)
+
+
 @socketio.on('newRound')
 def handle_new_round(info):
     word, roomID = info['word'], info['roomID']
@@ -51,7 +78,7 @@ def handle_new_round(info):
     game_state['guessedWord'] = ''.join(
         ['#' if c.isalnum() else c for c in word])
     redis_client.set(roomID, json.dumps(game_state))
-    emit('response', game_state, broadcast=True)
+    emit('response', game_state, room=roomID)
 
 
 @socketio.on('guess')
@@ -106,7 +133,7 @@ def handle_guess(msg):
         game_state['guesser'] = game_state['players'][guess_pos]
 
     redis_client.set(msg['roomID'], json.dumps(game_state))
-    emit('guess', game_state, broadcast=True)
+    emit('guess', game_state, room=msg['roomID'])
 
 
 @socketio.on('join')
@@ -120,7 +147,9 @@ def handle_join(credentials):
         # TODO: account for existing username
         game_state['players'].append(username)
         redis_client.set(roomID, json.dumps(game_state))
-        emit('join', game_state, broadcast=True)
+        join_room(roomID)
+        print(f"{username} has entered the room: {roomID}")
+        emit('update', game_state, room=roomID)
 
 
 @socketio.on('start')
@@ -128,9 +157,8 @@ def handle_start(roomID):
     game_state = json.loads(redis_client.get(roomID))
     game_state['gameStart'] = True
     game_state['guesser'] = game_state["players"][1]
-    # print(f"Players: {game_state['players']}")
     redis_client.set(roomID, json.dumps(game_state))
-    emit('start', game_state, broadcast=True)
+    emit('update', game_state, room=roomID)
 
 
 @app.route("/")
@@ -168,7 +196,11 @@ def create_game(request):
                       'curGuess': None,
                       'guessedWord': guessed_word,
                       'gameStart': False,
+                      'cap': 8
                       }
+
+    join_room(roomID)
+    print(f"{request['username']} has entered the room: {roomID}")
 
     redis_client.set(roomID, json.dumps(def_game_state))
     response = {'gameState': def_game_state, 'roomID': roomID}
