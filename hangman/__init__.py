@@ -1,16 +1,27 @@
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_cors import CORS
+from flask_redis import FlaskRedis
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+redis_client = FlaskRedis(app, decode_responses=True)
 
-app.config['CORS_HEADERS'] = 'Content-Type'
-app.config['CORS_HEADERS'] = 'Access-Control-Allow-Origin'
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = b''.join([
+    b'\x92\xc6\xd6',
+    b'\x1e;\x19_fl\xc0',
+    b'\xf31\xc1N\xc0kT',
+    b'\xb0s\x7f\xa1',
+    b'\x8f\x03',
+])
+app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 
 cors = CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
-socketio.run(app)
+socketio.init_app(app)
 
-import hangman.sockets
-import hangman.server
+import hangman.create
+import hangman.game
+import hangman.leave
+import hangman.main
+import hangman.socket_on
+import hangman.wait
