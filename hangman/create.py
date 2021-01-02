@@ -5,7 +5,6 @@ import json
 import string
 
 
-
 @socketio.on("create")
 def create_game(params):
     while True:
@@ -26,7 +25,8 @@ def create_game(params):
                       'curGuess': "",
                       'guessedWord': "",
                       'gameStart': False,
-                      'cap': 8
+                      'cap': 8,
+                      'time': int(params['time']),
                       }
 
     join_room(roomID)

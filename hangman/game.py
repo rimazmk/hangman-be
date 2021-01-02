@@ -17,10 +17,27 @@ def handle_new_round(info):
 
 @socketio.on('guess')
 def handle_guess(msg):
+    if not msg or msg['gameState']['guesser'] != msg['user']:
+        return
+
     game_state = msg['gameState']
     cur = game_state['curGuess']
 
-    if len(cur) == 1 and cur.isalpha():
+    if not cur:
+        guess_pos = game_state['players'].index(game_state['guesser'])
+        hang_pos = game_state['players'].index(game_state['hanger'])
+
+        while True:
+            guess_pos = (guess_pos + 1) % len(game_state['players'])
+            if guess_pos != hang_pos:
+                break
+        game_state['guesser'] = game_state['players'][guess_pos]
+
+        redis_client.set(msg['roomID'], json.dumps(game_state))
+        emit('update', game_state, room=msg['roomID'])
+        return
+
+    elif len(cur) == 1 and cur.isalpha():
         game_state['guessedLetters'].append(cur.lower())
         match = 0
 
@@ -59,11 +76,12 @@ def handle_guess(msg):
         game_state['numIncorrect'] = 0
     else:
         guess_pos = game_state['players'].index(game_state['guesser'])
-        guess_pos = (guess_pos + 1) % len(game_state['players'])
         hang_pos = game_state['players'].index(game_state['hanger'])
 
-        if guess_pos == hang_pos:
+        while True:
             guess_pos = (guess_pos + 1) % len(game_state['players'])
+            if guess_pos != hang_pos:
+                break
         game_state['guesser'] = game_state['players'][guess_pos]
 
     redis_client.set(msg['roomID'], json.dumps(game_state))
