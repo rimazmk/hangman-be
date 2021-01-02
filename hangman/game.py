@@ -3,6 +3,12 @@ from flask_socketio import emit
 import json
 
 
+@socketio.on('chat')
+def handle_message(info):
+    res = [info['user'], info['message']]
+    emit('chat', res, room=info['roomID'], include_self=False)
+
+
 @socketio.on('newRound')
 def handle_new_round(info):
     word, roomID = info['word'], info['roomID']
