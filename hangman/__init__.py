@@ -19,9 +19,7 @@ app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 cors = CORS(app)
 socketio.init_app(app)
 
-import hangman.create
+import hangman.db
 import hangman.game
-import hangman.leave
-import hangman.main
-import hangman.socket_on
-import hangman.wait
+import hangman.routes
+import hangman.sockets
