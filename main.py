@@ -39,15 +39,6 @@ def handle_connect():
 def handle_disconnect():
     global count
     count -= 1
-    # print(request.sid, type(request.sid), rooms())
-    room = None
-    for r in rooms():
-        if r != request.sid:
-            room = r
-            break
-
-    on_leave({'user': redis_client.get(request.sid), 'roomID': room, 'sid': request.sid})
-    redis_client.delete(request.sid)
     print(count, " connected")
 
 
@@ -55,7 +46,7 @@ def handle_disconnect():
 def on_leave(data):
     username = data['user']
     roomID = data['roomID']
-    print(f"ROOMID: {roomID}")
+    # print(f"ROOMID: {roomID}")
 
     if roomID:
         game_state = json.loads(redis_client.get(roomID))
@@ -65,7 +56,7 @@ def on_leave(data):
     def remove():
         try:
             game_state['players'].remove(username)
-            leave_room(roomID, data['sid'])
+            leave_room(roomID)
             print(f"{username} has left the room: {roomID}")
         except ValueError:
             print(f"{username} not found")
@@ -85,9 +76,9 @@ def on_leave(data):
         game_state['word'] = game_state['category'] = ""
     elif username == game_state['guesser']:
         guess_pos = game_state['players'].index(game_state['guesser'])
-        next = (guess_pos + 1) % len(game_state['players'])
-        jump = (next + 1) % len(game_state['players'])
-        guess_pos = next if game_state['hanger'] != game_state['players'][next] else jump
+        next_guesser = (guess_pos + 1) % len(game_state['players'])
+        jump = (next_guesser + 1) % len(game_state['players'])
+        guess_pos = next_guesser if game_state['hanger'] != game_state['players'][next_guesser] else jump
         game_state['guesser'] = game_state['players'][guess_pos]
         remove()
     else:
@@ -166,7 +157,7 @@ def handle_guess(msg):
         game_state['guesser'] = game_state['players'][guess_pos]
 
     redis_client.set(msg['roomID'], json.dumps(game_state))
-    emit('guess', game_state, room=msg['roomID'])
+    emit('update', game_state, room=msg['roomID'])
 
 
 @socketio.on('join')
@@ -174,7 +165,6 @@ def handle_join(credentials):
     username = credentials['user']
     roomID = credentials['roomID']
     game_state = json.loads(redis_client.get(roomID))
-    redis_client.set(request.sid, username)
 
     game_state['players'].append(username)
     redis_client.set(roomID, json.dumps(game_state))
@@ -211,10 +201,6 @@ def create_game(params):
         if not redis_client.exists(roomID):
             break
 
-    # guessed_word = ''.join(
-    #     ['#' if c.isalnum() else c for c in params['word']])
-
-    # TODO: Get word and category input at game screen
     def_game_state = {'players': [params['username']],
                       'hanger': params['username'],
                       'category': "",
@@ -230,7 +216,6 @@ def create_game(params):
                       'cap': 8
                       }
 
-    redis_client.set(request.sid, params['username'])
     join_room(roomID)
     print(f"{params['username']} has entered the room: {roomID}")
 
