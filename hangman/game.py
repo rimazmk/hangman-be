@@ -15,7 +15,8 @@ def create_game(params):
         'curGuess': "",
         'guessedWord': "",
         'gameStart': False,
-        'cap': 8
+        'cap': 8,
+        'time': int(params['time']),
     }
     return def_game_state
 
