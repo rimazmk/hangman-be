@@ -1,5 +1,6 @@
 from . import redis_client
 import json
+import copy
 
 
 def create_game(params):
@@ -31,7 +32,11 @@ def add_player(game_state, user):
 
 
 def remove_player(game_state, user):
-    game_state['players'].remove(user)
+    try:
+        game_state['players'].remove(user)
+        print(user, " has left the room")
+    except ValueError:
+        print("no user found named ", user)
 
 
 def num_players(game_state):
@@ -40,10 +45,12 @@ def num_players(game_state):
 
 def set_new_guesser(game_state, username):
     if len(game_state['players']) == 2:
-        game_state['hanger'] = game_state['players'][0]
-        game_state['gameStart'] = False
+        remove_player(game_state, username)
+        res = create_game({'username': game_state['players'][0], 'lives': game_state['lives']})
+        game_state.update(res)
 
     elif username == game_state['hanger']:
+        remove_player(game_state, username)
         game_state['hanger'] = game_state['players'][0]
         game_state['guesser'] = game_state['players'][1]
         game_state['word'] = game_state['category'] = ""
@@ -55,6 +62,7 @@ def set_new_guesser(game_state, username):
         guess_pos = next_guesser if game_state['hanger'] != game_state[
             'players'][next_guesser] else jump
         game_state['guesser'] = game_state['players'][guess_pos]
+        remove_player(game_state, username)
 
 
 def handle_new_round(game_state, word, category, roomID):

@@ -75,22 +75,15 @@ def on_leave(payload):
     else:
         return
 
-    def remove():
-        try:
-            remove_player(game_state, username)
-            leave_room(roomID)
-            print(f"{username} has left the room: {roomID}")
-        except ValueError:
-            print(f"{username} not found")
-
     if num_players(game_state) == 1:
         close_room(roomID)
         delete(roomID)
         return
     else:
         set_new_guesser(game_state, username)
-        remove()
+        leave_room(roomID)
 
+    print(game_state)
     set(roomID, game_state)
     emit('leave', game_state, room=roomID)
 
