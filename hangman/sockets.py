@@ -5,6 +5,11 @@ from flask_socketio import emit, close_room, leave_room, join_room
 import random
 import string
 
+@socketio.on('chat')
+def handle_message(info):
+    res = [info['user'], info['message']]
+    emit('chat', res, room=info['roomID'], include_self=False)
+
 
 @socketio.on("create")
 def create_game_handler(payload):
