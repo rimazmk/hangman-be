@@ -1,30 +1,87 @@
-from . import socketio, redis_client
-from flask_socketio import emit
+from . import redis_client
 import json
+import copy
 
 
-@socketio.on('newRound')
-def handle_new_round(info):
-    word, roomID = info['word'], info['roomID']
-    game_state = json.loads(redis_client.get(roomID))
+def create_game(params):
+    def_game_state = {
+        'players': [params['username']],
+        'hanger': params['username'],
+        'category': "",
+        'word': "",
+        'guessedLetters': [],
+        'numIncorrect': 0,
+        'lives': int(params['lives']),
+        'guessedWords': [],
+        'guesser': "",
+        'curGuess': "",
+        'guessedWord': "",
+        'gameStart': False,
+        'cap': 8
+    }
+    return def_game_state
+
+
+def start_game(game_state):
+    game_state['gameStart'] = True
+    game_state['guesser'] = game_state["players"][1]
+
+
+def add_player(game_state, user):
+    game_state['players'].append(user)
+
+
+def remove_player(game_state, user):
+    try:
+        game_state['players'].remove(user)
+        print(user, " has left the room")
+    except ValueError:
+        print("no user found named ", user)
+
+
+def num_players(game_state):
+    return len(game_state['players'])
+
+
+def set_new_guesser(game_state, username):
+    if len(game_state['players']) == 2:
+        remove_player(game_state, username)
+        res = create_game({'username': game_state['players'][0], 'lives': game_state['lives']})
+        game_state.update(res)
+
+    elif username == game_state['hanger']:
+        remove_player(game_state, username)
+        game_state['hanger'] = game_state['players'][0]
+        game_state['guesser'] = game_state['players'][1]
+        game_state['word'] = game_state['category'] = ""
+
+    elif username == game_state['guesser']:
+        guess_pos = game_state['players'].index(game_state['guesser'])
+        next_guesser = (guess_pos + 1) % len(game_state['players'])
+        jump = (next_guesser + 1) % len(game_state['players'])
+        guess_pos = next_guesser if game_state['hanger'] != game_state[
+            'players'][next_guesser] else jump
+        game_state['guesser'] = game_state['players'][guess_pos]
+        remove_player(game_state, username)
+
+
+def handle_new_round(game_state, word, category, roomID):
     game_state['word'] = word
-    game_state['category'] = info['category']
+    game_state['category'] = category
     game_state['guessedWord'] = ''.join(
         ['#' if c.isalnum() else c for c in word])
     redis_client.set(roomID, json.dumps(game_state))
-    emit('response', game_state, room=roomID)
 
 
-@socketio.on('guess')
-def handle_guess(msg):
-    game_state = msg['gameState']
+def guess(game_state, user):
     cur = game_state['curGuess']
 
     if len(cur) == 1 and cur.isalpha():
         game_state['guessedLetters'].append(cur.lower())
         match = 0
 
-        for i, (w, g) in enumerate(zip(game_state['word'], game_state['guessedWord'])):
+        for i, (w, g) in enumerate(
+                zip(game_state['word'], game_state['guessedWord'])):
             if w.lower() == cur.lower() and g == '#':
                 game_state['guessedWord'] = game_state['guessedWord'][:i] + \
                     cur + game_state['guessedWord'][i + 1:]
@@ -40,12 +97,12 @@ def handle_guess(msg):
             game_state['numIncorrect'] += 1
 
     # TODO: Update wins variable here
-    if (cur.lower() == game_state['word'].lower() or
-        game_state['numIncorrect'] == game_state['lives'] or
+    if (cur.lower() == game_state['word'].lower()
+            or game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 
         if game_state["numIncorrect"] != game_state['lives']:
-            game_state["hanger"] = msg['user']
+            game_state["hanger"] = user
 
         hang_pos = game_state['players'].index(game_state['hanger'])
         guess_pos = hang_pos + \
@@ -54,7 +111,8 @@ def handle_guess(msg):
 
         # TODO: Transition to newRound without relying on category
         # game_state['word'] = ""
-        game_state['category'] = game_state['curGuess'] = game_state['guessedWord'] = ""
+        game_state['category'] = game_state['curGuess'] = game_state[
+            'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
         game_state['numIncorrect'] = 0
     else:
@@ -65,6 +123,3 @@ def handle_guess(msg):
         if guess_pos == hang_pos:
             guess_pos = (guess_pos + 1) % len(game_state['players'])
         game_state['guesser'] = game_state['players'][guess_pos]
-
-    redis_client.set(msg['roomID'], json.dumps(game_state))
-    emit('update', game_state, room=msg['roomID'])

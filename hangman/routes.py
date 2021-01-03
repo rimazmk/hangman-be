@@ -1,4 +1,5 @@
-from . import app, redis_client
+from . import app
+from .db import exists, get
 from flask import abort, request
 import json
 
@@ -6,8 +7,8 @@ import json
 @app.route("/")
 def get_state():
     roomID = request.args.get("roomID", default="", type=str)
-    if roomID and redis_client.exists(roomID):
-        return json.loads(redis_client.get(roomID))
+    if roomID and exists(roomID):
+        return get(roomID)
     elif roomID and len(roomID) == 10:
         return abort(404)
     else:
