@@ -73,7 +73,7 @@ def handle_guess(payload):
 def on_leave(payload):
     username = payload['user']
     roomID = payload['roomID']
-    print(f"ROOMID: {roomID}")
+    print(f"{username} left {roomID}")
 
     if roomID and exists(roomID):
         game_state = get(roomID)

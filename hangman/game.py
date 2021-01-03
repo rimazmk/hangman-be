@@ -64,6 +64,9 @@ def set_new_guesser(game_state, username):
         game_state['guesser'] = game_state['players'][guess_pos]
         remove_player(game_state, username)
 
+    else:
+        remove_player(game_state, username)
+
 
 def handle_new_round(game_state, word, category, roomID):
     game_state['word'] = word
