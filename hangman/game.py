@@ -1,6 +1,4 @@
-from . import redis_client
-import json
-import copy
+from .db import set
 
 
 def create_game(params):
@@ -46,7 +44,8 @@ def num_players(game_state):
 def set_new_guesser(game_state, username):
     if len(game_state['players']) == 2:
         remove_player(game_state, username)
-        res = create_game({'username': game_state['players'][0], 'lives': game_state['lives']})
+        res = create_game(
+            {'username': game_state['players'][0], 'lives': game_state['lives']})
         game_state.update(res)
 
     elif username == game_state['hanger']:
@@ -73,13 +72,16 @@ def handle_new_round(game_state, word, category, roomID):
     game_state['category'] = category
     game_state['guessedWord'] = ''.join(
         ['#' if c.isalnum() else c for c in word])
-    redis_client.set(roomID, json.dumps(game_state))
+    set(roomID, game_state)
 
 
 def guess(game_state, user):
     cur = game_state['curGuess']
 
-    if len(cur) == 1 and cur.isalpha():
+    if not cur:
+        game_state['numIncorrect'] += 1
+
+    elif len(cur) == 1 and cur.isalpha():
         game_state['guessedLetters'].append(cur.lower())
         match = 0
 
@@ -100,7 +102,7 @@ def guess(game_state, user):
             game_state['numIncorrect'] += 1
 
     # TODO: Update wins variable here
-    if (cur.lower() == game_state['word'].lower()
+    if ((cur and cur.lower() == game_state['word'].lower())
             or game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 

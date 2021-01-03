@@ -1,7 +1,6 @@
 from . import app
 from .db import exists, get
 from flask import abort, request
-import json
 
 
 @app.route("/")
