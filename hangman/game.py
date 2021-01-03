@@ -24,18 +24,7 @@ def handle_guess(msg):
     cur = game_state['curGuess']
 
     if not cur:
-        guess_pos = game_state['players'].index(game_state['guesser'])
-        hang_pos = game_state['players'].index(game_state['hanger'])
-
-        while True:
-            guess_pos = (guess_pos + 1) % len(game_state['players'])
-            if guess_pos != hang_pos:
-                break
-        game_state['guesser'] = game_state['players'][guess_pos]
-
-        redis_client.set(msg['roomID'], json.dumps(game_state))
-        emit('update', game_state, room=msg['roomID'])
-        return
+        game_state['numIncorrect'] += 1
 
     elif len(cur) == 1 and cur.isalpha():
         game_state['guessedLetters'].append(cur.lower())
@@ -57,7 +46,7 @@ def handle_guess(msg):
             game_state['numIncorrect'] += 1
 
     # TODO: Update wins variable here
-    if (cur.lower() == game_state['word'].lower() or
+    if ((cur and cur.lower() == game_state['word'].lower()) or
         game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 
