@@ -29,10 +29,10 @@ def create_game_handler(payload):
 
 @socketio.on('newRound')
 def new_round_handler(payload):
-    word, roomID, category = payload['word'], payload['roomID'], payload[
-        'category']
+    word, roomID, category, user = payload['word'], payload['roomID'], payload[
+        'category'], payload['user']
     game_state = get(roomID)
-    handle_new_round(game_state, word, category, roomID)
+    handle_new_round(game_state, category, word, user, roomID)
     emit('response', game_state, room=roomID)
 
 
@@ -63,8 +63,8 @@ def handle_start(roomID):
 
 @socketio.on('guess')
 def handle_guess(payload):
-    game_state, user = payload['gameState'], payload['user']
-    guess(game_state, user)
+    game_state = payload['gameState']
+    guess(game_state)
     set(payload['roomID'], game_state)
     emit('update', game_state, room=payload['roomID'])
 
