@@ -16,6 +16,8 @@ def create_game_handler(payload):
     while True:
         roomID = ''.join(
             random.choices(string.ascii_uppercase + string.digits, k=10))
+
+        print(exists(roomID))
         if not exists(roomID):
             break
 
@@ -33,6 +35,7 @@ def new_round_handler(payload):
         'category']
     game_state = get(roomID)
     handle_new_round(game_state, word, category, roomID)
+    set(roomID, game_state)
     emit('response', game_state, room=roomID)
 
 

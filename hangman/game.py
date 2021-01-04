@@ -1,4 +1,3 @@
-from . import redis_client
 import json
 import copy
 
@@ -73,7 +72,6 @@ def handle_new_round(game_state, word, category, roomID):
     game_state['category'] = category
     game_state['guessedWord'] = ''.join(
         ['#' if c.isalnum() else c for c in word])
-    redis_client.set(roomID, json.dumps(game_state))
 
 
 def guess(game_state, user):

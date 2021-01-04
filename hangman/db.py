@@ -1,18 +1,28 @@
-from . import redis_client
-import json
+from . import mongo
 
 
 def set(roomID, game_state):
-    redis_client.set(roomID, json.dumps(game_state))
+    mongo.db.hangman.update(
+        {"roomID": roomID},
+        {"roomID": roomID, "gameState": game_state},
+        upsert=True
+    )
 
 
 def get(roomID):
-    return json.loads(redis_client.get(roomID))
+    res = mongo.db.hangman.find_one({"roomID": roomID})
+    print(f"FROM GET: {res}")
+    if res:
+        return res['gameState']
+    return None
 
 
 def exists(roomID):
-    return redis_client.exists(roomID)
+    return get(roomID) != None
+    # mongo.db.hangman.find_one({
+    #     "roomID": { "$in": [roomID], "$exists": True }
+    # })
 
 
 def delete(roomID):
-    return redis_client.delete(roomID)
+    mongo.db.hangman.remove({"roomID": roomID})
