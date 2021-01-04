@@ -46,7 +46,7 @@ def set_new_guesser(game_state, username):
     if len(game_state['players']) == 2:
         remove_player(game_state, username)
         res = create_game(
-            {'username': game_state['players'][0], 'lives': game_state['lives']})
+            {'username': game_state['players'][0], 'lives': game_state['lives'], 'time': game_state['time']})
         game_state.update(res)
 
     elif username == game_state['hanger']:
