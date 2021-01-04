@@ -48,7 +48,8 @@ def set_new_guesser(game_state, username):
         remove_player(game_state, username)
         res = create_game({
             'username': game_state['players'][0],
-            'lives': game_state['lives']
+            'lives': game_state['lives'],
+            'rotation': game_state['rotation'],
         })
         game_state.update(res)
 

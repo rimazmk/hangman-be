@@ -34,7 +34,7 @@ def new_round_handler(payload):
     word, roomID, category, user = payload['word'], payload['roomID'], payload[
         'category'], payload['user']
     game_state = get(roomID)
-    handle_new_round(game_state, word, category, roomID)
+    handle_new_round(game_state, category, word, user, roomID)
     set(roomID, game_state)
     emit('response', game_state, room=roomID)
 
