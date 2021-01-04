@@ -2,11 +2,11 @@ from . import mongo
 
 
 def set(roomID, game_state):
-    mongo.db.hangman.update(
-        {"roomID": roomID},
-        {"roomID": roomID, "gameState": game_state},
-        upsert=True
-    )
+    mongo.db.hangman.update({"roomID": roomID}, {
+        "roomID": roomID,
+        "gameState": game_state
+    },
+                            upsert=True)
 
 
 def get(roomID):

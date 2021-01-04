@@ -15,7 +15,6 @@ app.config['SECRET_KEY'] = b''.join([
     b'\xb0s\x7f\xa1',
     b'\x8f\x03',
 ])
-# app.config['REDIS_URL'] = "redis://:@localhost:6379/0"
 
 cors = CORS(app)
 socketio.init_app(app)
