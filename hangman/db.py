@@ -16,7 +16,7 @@ def upsert(roomID: str, game_state: GameState) -> None:
         upsert=True)
 
 
-def get(roomID: str) -> Optional(GameState):
+def get(roomID: str) -> Optional[GameState]:
     """Get gameState from the database if it exists."""
     res = mongo.db.hangman.find_one({"roomID": roomID})
 

@@ -7,7 +7,7 @@ from flask_socketio import emit, close_room, leave_room, join_room
 from .db import upsert, get, exists, delete
 from .game import (create_game, start_game, add_player, num_players,
                    handle_leave, handle_new_round, guess)
-from . import socketio
+from . import socketio, GameState
 
 
 @socketio.on('chat')
@@ -73,7 +73,7 @@ def handle_start(roomID: str):
 
 
 @socketio.on('guess')
-def handle_guess(payload: Dict[Union[GameState, str]]):
+def handle_guess(payload: Dict[str, Union[GameState, str]]):
     """Update GameState and send to all players."""
     game_state = payload['gameState']
     guess(game_state)
