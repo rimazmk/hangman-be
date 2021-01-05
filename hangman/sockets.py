@@ -18,7 +18,6 @@ def create_game_handler(payload):
         roomID = ''.join(
             random.choices(string.ascii_uppercase + string.digits, k=10))
 
-        print(exists(roomID))
         if not exists(roomID):
             break
 
@@ -35,7 +34,7 @@ def new_round_handler(payload):
     word, roomID, category, user = payload['word'], payload['roomID'], payload[
         'category'], payload['user']
     game_state = get(roomID)
-    handle_new_round(game_state, category, word, user, roomID)
+    handle_new_round(game_state, category, word, user)
     set(roomID, game_state)
     emit('response', game_state, room=roomID)
 
@@ -81,20 +80,15 @@ def on_leave(payload):
 
     if roomID and exists(roomID):
         game_state = get(roomID)
-    else:
-        return
 
-    if num_players(game_state) == 1:
-        close_room(roomID)
-        delete(roomID)
-        return
-    else:
-        set_new_guesser(game_state, username)
-        leave_room(roomID)
-
-    print(game_state)
-    set(roomID, game_state)
-    emit('leave', game_state, room=roomID)
+        if num_players(game_state) == 1:
+            close_room(roomID)
+            delete(roomID)
+        else:
+            set_new_guesser(game_state, username)
+            leave_room(roomID)
+            set(roomID, game_state)
+            emit('leave', game_state, room=roomID)
 
 
 count = 0

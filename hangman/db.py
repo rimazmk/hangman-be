@@ -6,22 +6,19 @@ def set(roomID, game_state):
         "roomID": roomID,
         "gameState": game_state
     },
-                            upsert=True)
+        upsert=True)
 
 
 def get(roomID):
     res = mongo.db.hangman.find_one({"roomID": roomID})
-    print(f"FROM GET: {res}")
+
     if res:
         return res['gameState']
     return None
 
 
 def exists(roomID):
-    return get(roomID) != None
-    # mongo.db.hangman.find_one({
-    #     "roomID": { "$in": [roomID], "$exists": True }
-    # })
+    return mongo.db.hangman.count_documents({'roomID': roomID}, limit=1)
 
 
 def delete(roomID):

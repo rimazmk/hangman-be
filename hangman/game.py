@@ -2,6 +2,11 @@ from .db import set
 
 
 def create_game(params):
+    if params['time'] == 'inf':
+        time = None
+    else:
+        time = int(params['time'])
+
     def_game_state = {
         'players': [params['username']],
         'wins': {params['username']: 0},
@@ -20,7 +25,7 @@ def create_game(params):
         'rotation': params['rotation'],
         'round': 0,
         'numrounds': int(params['numrounds']),
-        'time': int(params['time']),
+        'time': time,
     }
     return def_game_state
 
@@ -55,6 +60,7 @@ def set_new_guesser(game_state, username):
             'username': game_state['players'][0],
             'lives': game_state['lives'],
             'rotation': game_state['rotation'],
+            'numrounds': game_state['numrounds'],
             'time': game_state['time'],
         })
         game_state.update(res)
@@ -67,8 +73,8 @@ def set_new_guesser(game_state, username):
 
     elif username == game_state['guesser']:
         guess_pos = game_state['players'].index(game_state['guesser'])
-        next_guesser = (guess_pos + 1) % len(game_state['players'])
-        jump = (next_guesser + 1) % len(game_state['players'])
+        next_guesser = (guess_pos + 1) % num_players(game_state)
+        jump = (next_guesser + 1) % num_players(game_state)
         guess_pos = next_guesser if game_state['hanger'] != game_state[
             'players'][next_guesser] else jump
         game_state['guesser'] = game_state['players'][guess_pos]
@@ -78,7 +84,7 @@ def set_new_guesser(game_state, username):
         remove_player(game_state, username)
 
 
-def handle_new_round(game_state, category, word, user, roomID):
+def handle_new_round(game_state, category, word, user):
     game_state['word'] = word
     game_state['category'] = category
     game_state['guessedWord'] = ''.join(
@@ -88,14 +94,14 @@ def handle_new_round(game_state, category, word, user, roomID):
         if game_state['rotation'] == 'robin':
             hang_pos = game_state['players'].index(game_state['hanger'])
             next = hang_pos + \
-                1 if hang_pos != (len(game_state['players']) - 1) else 0
+                1 if hang_pos != (num_players(game_state) - 1) else 0
             game_state['hanger'] = game_state['players'][next]
         elif game_state["numIncorrect"] != game_state['lives']:
             game_state["hanger"] = user
 
         hang_pos = game_state['players'].index(game_state['hanger'])
         guess_pos = hang_pos + \
-            1 if hang_pos != (len(game_state['players']) - 1) else 0
+            1 if hang_pos != (num_players(game_state) - 1) else 0
         game_state['guesser'] = game_state['players'][guess_pos]
 
     game_state['numIncorrect'] = 0
@@ -132,21 +138,20 @@ def guess(game_state):
             or game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 
-        # TODO: Transition to newRound without relying on category
-        # game_state['word'] = ""
         if game_state['numIncorrect'] == game_state['lives']:
             game_state['wins'][game_state['hanger']] += 1
         else:
             game_state['wins'][game_state['guesser']] += 1
 
+        # TODO: Transition to newRound without relying on category
         game_state['category'] = game_state['curGuess'] = game_state[
             'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
     else:
         guess_pos = game_state['players'].index(game_state['guesser'])
-        guess_pos = (guess_pos + 1) % len(game_state['players'])
+        guess_pos = (guess_pos + 1) % num_players(game_state)
         hang_pos = game_state['players'].index(game_state['hanger'])
 
         if guess_pos == hang_pos:
-            guess_pos = (guess_pos + 1) % len(game_state['players'])
+            guess_pos = (guess_pos + 1) % num_players(game_state)
         game_state['guesser'] = game_state['players'][guess_pos]
