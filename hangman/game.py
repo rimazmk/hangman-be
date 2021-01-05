@@ -1,4 +1,10 @@
-def create_game(params):
+"""Handle Game Logic."""
+
+from . import GameState, Dict
+
+
+def create_game(params: Dict[str, str]) -> GameState:
+    """Create GameState object given initial game parameters."""
     if params['time'] == 'inf':
         time = None
     else:
@@ -26,30 +32,35 @@ def create_game(params):
     }
 
 
-def start_game(game_state):
+def start_game(game_state: GameState) -> None:
+    """Start the game and assign the first guesser."""
     game_state['gameStart'] = True
     game_state['guesser'] = game_state["players"][1]
 
 
-def add_player(game_state, user):
+def add_player(game_state: GameState, user: str) -> None:
+    """Add a new player to the game."""
     game_state['players'].append(user)
     game_state['wins'][user] = 0
 
 
-def remove_player(game_state, user):
+def remove_player(game_state: GameState, user: str) -> None:
+    """Remove a player from the game if they exist."""
     try:
         game_state['players'].remove(user)
         game_state['wins'].pop(user)
         print(user, " has left the room")
     except ValueError:
-        print("no user found named ", user)
+        print("No user found named ", user)
 
 
-def num_players(game_state):
+def num_players(game_state: GameState) -> int:
+    """Return the number of players in the game."""
     return len(game_state['players'])
 
 
-def set_new_guesser(game_state):
+def set_new_guesser(game_state: GameState) -> None:
+    """Assign the next guesser."""
     guess_pos = game_state['players'].index(game_state['guesser'])
 
     while True:
@@ -61,7 +72,8 @@ def set_new_guesser(game_state):
     game_state['guesser'] = game_state['players'][guess_pos]
 
 
-def handle_leave(game_state, username):
+def handle_leave(game_state: GameState, username: str) -> None:
+    """Update GameState object to reflect player leaving."""
     if num_players(game_state) == 2:
         remove_player(game_state, username)
         res = create_game({
@@ -87,7 +99,9 @@ def handle_leave(game_state, username):
         remove_player(game_state, username)
 
 
-def handle_new_round(game_state, category, word, user):
+def handle_new_round(game_state: GameState, category: str,
+                     word: str, user: str) -> None:
+    """Update GameState object for the new round."""
     game_state['word'] = word
     game_state['category'] = category
     game_state['guessedWord'] = ''.join(
@@ -96,9 +110,9 @@ def handle_new_round(game_state, category, word, user):
     if game_state['round']:
         if game_state['rotation'] == 'robin':
             hang_pos = game_state['players'].index(game_state['hanger'])
-            next = hang_pos + \
+            next_hanger = hang_pos + \
                 1 if hang_pos != (num_players(game_state) - 1) else 0
-            game_state['hanger'] = game_state['players'][next]
+            game_state['hanger'] = game_state['players'][next_hanger]
         elif game_state["numIncorrect"] != game_state['lives']:
             game_state["hanger"] = user
 
@@ -111,7 +125,8 @@ def handle_new_round(game_state, category, word, user):
     game_state['round'] += 1
 
 
-def guess(game_state):
+def guess(game_state: GameState):
+    """Handle player's guess."""
     cur = game_state['curGuess']
 
     if not cur:
@@ -121,9 +136,9 @@ def guess(game_state):
         game_state['guessedLetters'].append(cur)
         match = 0
 
-        for i, (w, g) in enumerate(
+        for i, (word_let, guess_let) in enumerate(
                 zip(game_state['word'], game_state['guessedWord'])):
-            if w.lower() == cur and g == '#':
+            if word_let.lower() == cur and guess_let == '#':
                 game_state['guessedWord'] = game_state['guessedWord'][:i] + \
                     cur + game_state['guessedWord'][i + 1:]
                 match += 1

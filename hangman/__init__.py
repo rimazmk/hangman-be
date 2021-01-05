@@ -1,3 +1,6 @@
+"""Online Multiplayer Hangman Game."""
+
+from typing import List, Dict, TypedDict
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -19,7 +22,28 @@ app.config['SECRET_KEY'] = b''.join([
 cors = CORS(app)
 socketio.init_app(app)
 
-from . import db
-from . import game
-from . import routes
-from . import sockets
+
+class GameState(TypedDict):
+    """Assist with type hinting for GameState object."""
+
+    players: List[str]
+    wins: Dict[str, int]
+    hanger: str
+    category: str
+    word: str
+    guessedLetters: List[str]
+    numIncorrect: int
+    lives: int
+    guessedWords: List[str]
+    guesser: str
+    curGuess: str
+    guessedWord: str
+    gameStart: bool
+    cap: int
+    rotation: str
+    round: int
+    numRounds: int
+    time: int
+
+
+from . import db, game, routes, sockets
