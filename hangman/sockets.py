@@ -1,9 +1,10 @@
 from .db import set, get, delete, exists
-from .game import set_new_guesser, num_players, handle_new_round, guess, add_player, start_game, create_game, remove_player
+from .game import set_new_guesser, num_players, handle_new_round, guess, add_player, start_game, create_game
 from . import socketio
 from flask_socketio import emit, close_room, leave_room, join_room
 import random
 import string
+
 
 @socketio.on('chat')
 def handle_message(info):

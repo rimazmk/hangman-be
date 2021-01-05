@@ -1,4 +1,4 @@
-import json
+from .db import set
 
 
 def create_game(params):
@@ -19,7 +19,8 @@ def create_game(params):
         'cap': 8,
         'rotation': params['rotation'],
         'round': 0,
-        'numrounds': int(params['numrounds'])
+        'numrounds': int(params['numrounds']),
+        'time': int(params['time']),
     }
     return def_game_state
 
@@ -54,6 +55,7 @@ def set_new_guesser(game_state, username):
             'username': game_state['players'][0],
             'lives': game_state['lives'],
             'rotation': game_state['rotation'],
+            'time': game_state['time'],
         })
         game_state.update(res)
 
@@ -103,7 +105,10 @@ def handle_new_round(game_state, category, word, user, roomID):
 def guess(game_state):
     cur = game_state['curGuess']
 
-    if len(cur) == 1 and cur.isalpha():
+    if not cur:
+        game_state['numIncorrect'] += 1
+
+    elif len(cur) == 1 and cur.isalpha():
         game_state['guessedLetters'].append(cur.lower())
         match = 0
 
@@ -124,7 +129,7 @@ def guess(game_state):
             game_state['numIncorrect'] += 1
 
     # TODO: Update wins variable here
-    if (cur.lower() == game_state['word'].lower()
+    if ((cur and cur.lower() == game_state['word'].lower())
             or game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 
