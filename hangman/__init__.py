@@ -19,7 +19,7 @@ app.config['SECRET_KEY'] = b''.join([
 cors = CORS(app)
 socketio.init_app(app)
 
-import hangman.db
-import hangman.game
-import hangman.routes
-import hangman.sockets
+from . import db
+from . import game
+from . import routes
+from . import sockets

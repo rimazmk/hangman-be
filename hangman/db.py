@@ -18,7 +18,7 @@ def get(roomID):
 
 
 def exists(roomID):
-    return mongo.db.hangman.count_documents({'roomID': roomID}, limit=1)
+    return mongo.db.hangman.count_documents({'roomID': roomID}, limit=1) > 0
 
 
 def delete(roomID):

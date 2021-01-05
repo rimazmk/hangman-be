@@ -1,13 +1,10 @@
-from .db import set
-
-
 def create_game(params):
     if params['time'] == 'inf':
         time = None
     else:
         time = int(params['time'])
 
-    def_game_state = {
+    return {
         'players': [params['username']],
         'wins': {params['username']: 0},
         'hanger': params['username'],
@@ -24,10 +21,9 @@ def create_game(params):
         'cap': 8,
         'rotation': params['rotation'],
         'round': 0,
-        'numrounds': int(params['numrounds']),
+        'numRounds': int(params['numRounds']),
         'time': time,
     }
-    return def_game_state
 
 
 def start_game(game_state):
@@ -37,7 +33,7 @@ def start_game(game_state):
 
 def add_player(game_state, user):
     game_state['players'].append(user)
-    game_state['wins'].update({user: 0})
+    game_state['wins'][user] = 0
 
 
 def remove_player(game_state, user):
@@ -53,14 +49,26 @@ def num_players(game_state):
     return len(game_state['players'])
 
 
-def set_new_guesser(game_state, username):
+def set_new_guesser(game_state):
+    guess_pos = game_state['players'].index(game_state['guesser'])
+
+    while True:
+        guess_pos = (guess_pos + 1) % num_players(game_state)
+
+        if game_state['players'][guess_pos] != game_state['hanger']:
+            break
+
+    game_state['guesser'] = game_state['players'][guess_pos]
+
+
+def handle_leave(game_state, username):
     if num_players(game_state) == 2:
         remove_player(game_state, username)
         res = create_game({
             'username': game_state['players'][0],
             'lives': game_state['lives'],
             'rotation': game_state['rotation'],
-            'numrounds': game_state['numrounds'],
+            'numRounds': game_state['numRounds'],
             'time': game_state['time'],
         })
         game_state.update(res)
@@ -72,12 +80,7 @@ def set_new_guesser(game_state, username):
         game_state['word'] = game_state['category'] = ""
 
     elif username == game_state['guesser']:
-        guess_pos = game_state['players'].index(game_state['guesser'])
-        next_guesser = (guess_pos + 1) % num_players(game_state)
-        jump = (next_guesser + 1) % num_players(game_state)
-        guess_pos = next_guesser if game_state['hanger'] != game_state[
-            'players'][next_guesser] else jump
-        game_state['guesser'] = game_state['players'][guess_pos]
+        set_new_guesser(game_state)
         remove_player(game_state, username)
 
     else:
@@ -114,13 +117,13 @@ def guess(game_state):
     if not cur:
         game_state['numIncorrect'] += 1
 
-    elif len(cur) == 1 and cur.isalpha():
-        game_state['guessedLetters'].append(cur.lower())
+    elif len(cur) == 1:
+        game_state['guessedLetters'].append(cur)
         match = 0
 
         for i, (w, g) in enumerate(
                 zip(game_state['word'], game_state['guessedWord'])):
-            if w.lower() == cur.lower() and g == '#':
+            if w.lower() == cur and g == '#':
                 game_state['guessedWord'] = game_state['guessedWord'][:i] + \
                     cur + game_state['guessedWord'][i + 1:]
                 match += 1
@@ -148,10 +151,4 @@ def guess(game_state):
             'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
     else:
-        guess_pos = game_state['players'].index(game_state['guesser'])
-        guess_pos = (guess_pos + 1) % num_players(game_state)
-        hang_pos = game_state['players'].index(game_state['hanger'])
-
-        if guess_pos == hang_pos:
-            guess_pos = (guess_pos + 1) % num_players(game_state)
-        game_state['guesser'] = game_state['players'][guess_pos]
+        set_new_guesser(game_state)

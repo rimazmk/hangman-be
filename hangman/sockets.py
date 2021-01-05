@@ -1,5 +1,5 @@
-from .db import set, get, delete, exists
-from .game import set_new_guesser, num_players, handle_new_round, guess, add_player, start_game, create_game
+from .db import *
+from .game import *
 from . import socketio
 from flask_socketio import emit, close_room, leave_room, join_room
 import random
@@ -25,8 +25,7 @@ def create_game_handler(payload):
     print(f"{payload['username']} has entered the room: {roomID}")
     def_game_state = create_game(payload)
     set(roomID, def_game_state)
-    response = {'gameState': def_game_state, 'roomID': roomID}
-    emit('link', response)
+    emit('link', {'gameState': def_game_state, 'roomID': roomID})
 
 
 @socketio.on('newRound')
@@ -46,8 +45,7 @@ def handle_join_room(roomID):
 
 @socketio.on('join')
 def handle_join(credentials):
-    user = credentials['user']
-    roomID = credentials['roomID']
+    user, roomID = credentials['user'], credentials['roomID']
     game_state = get(roomID)
     add_player(game_state, user)
     join_room(roomID)
@@ -74,8 +72,7 @@ def handle_guess(payload):
 
 @socketio.on('leave')
 def on_leave(payload):
-    username = payload['user']
-    roomID = payload['roomID']
+    username, roomID = payload['user'], payload['roomID']
     print(f"{username} left {roomID}")
 
     if roomID and exists(roomID):
@@ -85,7 +82,7 @@ def on_leave(payload):
             close_room(roomID)
             delete(roomID)
         else:
-            set_new_guesser(game_state, username)
+            handle_leave(game_state, username)
             leave_room(roomID)
             set(roomID, game_state)
             emit('leave', game_state, room=roomID)
