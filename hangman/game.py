@@ -4,6 +4,7 @@ import json
 def create_game(params):
     def_game_state = {
         'players': [params['username']],
+        'wins' : {params['username'] : 0},
         'hanger': params['username'],
         'category': "",
         'word': "",
@@ -17,7 +18,8 @@ def create_game(params):
         'gameStart': False,
         'cap': 8,
         'rotation': params['rotation'],
-        'round': 0
+        'round': 0,
+        'numrounds' : params['numrounds']
     }
     return def_game_state
 
@@ -29,11 +31,12 @@ def start_game(game_state):
 
 def add_player(game_state, user):
     game_state['players'].append(user)
-
+    game_state['wins'].update({user : 0})
 
 def remove_player(game_state, user):
     try:
         game_state['players'].remove(user)
+        game_state['wins'].pop(user)
         print(user, " has left the room")
     except ValueError:
         print("no user found named ", user)
@@ -126,6 +129,11 @@ def guess(game_state):
 
         # TODO: Transition to newRound without relying on category
         # game_state['word'] = ""
+        if game_state['numIncorrect'] == game_state['lives']:
+            game_state['wins'][game_state['hanger']] += 1
+        else:
+            game_state['wins'][game_state['guesser']] += 1
+
         game_state['category'] = game_state['curGuess'] = game_state[
             'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
