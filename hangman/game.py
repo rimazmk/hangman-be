@@ -128,7 +128,6 @@ def guess(game_state):
         if cur.lower() != game_state['word'].lower():
             game_state['numIncorrect'] += 1
 
-    # TODO: Update wins variable here
     if ((cur and cur.lower() == game_state['word'].lower())
             or game_state['numIncorrect'] == game_state['lives'] or
             game_state['word'].lower() == game_state['guessedWord'].lower()):
