@@ -4,7 +4,7 @@ import json
 def create_game(params):
     def_game_state = {
         'players': [params['username']],
-        'wins' : {params['username'] : 0},
+        'wins': {params['username']: 0},
         'hanger': params['username'],
         'category': "",
         'word': "",
@@ -19,7 +19,7 @@ def create_game(params):
         'cap': 8,
         'rotation': params['rotation'],
         'round': 0,
-        'numrounds' : params['numrounds']
+        'numrounds': int(params['numrounds'])
     }
     return def_game_state
 
@@ -31,7 +31,8 @@ def start_game(game_state):
 
 def add_player(game_state, user):
     game_state['players'].append(user)
-    game_state['wins'].update({user : 0})
+    game_state['wins'].update({user: 0})
+
 
 def remove_player(game_state, user):
     try:
