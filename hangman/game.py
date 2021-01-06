@@ -76,12 +76,13 @@ def handle_leave(game_state: GameState, username: str) -> None:
     """Update GameState object to reflect player leaving."""
     if num_players(game_state) == 2:
         remove_player(game_state, username)
+        time = 'inf' if not game_state['time'] else game_state['time']
         res = create_game({
             'username': game_state['players'][0],
             'lives': game_state['lives'],
             'rotation': game_state['rotation'],
             'numRounds': game_state['numRounds'],
-            'time': game_state['time'],
+            'time': time,
         })
         game_state.update(res)
         game_state['wins'] = {game_state['players'][0] : 0}
@@ -141,7 +142,7 @@ def guess(game_state: GameState):
                 zip(game_state['word'], game_state['guessedWord'])):
             if word_let.lower() == cur and guess_let == '#':
                 game_state['guessedWord'] = game_state['guessedWord'][:i] + \
-                    cur + game_state['guessedWord'][i + 1:]
+                    word_let + game_state['guessedWord'][i + 1:]
                 match += 1
 
         if match == 0:
