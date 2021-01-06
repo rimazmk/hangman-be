@@ -9,7 +9,7 @@ def upsert(roomID: str, game_state: GameState) -> None:
     Update gameState from roomID if it already exists.
     Otherwise, insert roomID and gameState into database.
     """
-    mongo.db.hangman.update({"roomID": roomID}, {
+    mongo.db.hangman.replace_one({"roomID": roomID}, {
         "roomID": roomID,
         "gameState": game_state
     },
@@ -32,4 +32,4 @@ def exists(roomID: str) -> bool:
 
 def delete(roomID: str) -> None:
     """Delete roomID from database."""
-    mongo.db.hangman.remove({"roomID": roomID})
+    mongo.db.hangman.delete_one({"roomID": roomID})

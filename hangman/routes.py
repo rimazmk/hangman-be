@@ -16,5 +16,6 @@ def get_state():
     if roomID and exists(roomID):
         return get(roomID)
     if roomID and len(roomID) == 10:
+        print("welp")
         return abort(404)
     return abort(400)

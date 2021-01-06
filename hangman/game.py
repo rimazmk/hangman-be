@@ -50,7 +50,7 @@ def remove_player(game_state: GameState, user: str) -> None:
         game_state['players'].remove(user)
         game_state['wins'].pop(user)
         print(user, " has left the room")
-    except ValueError:
+    except (ValueError, KeyError) as error:
         print("No user found named ", user)
 
 
@@ -84,6 +84,7 @@ def handle_leave(game_state: GameState, username: str) -> None:
             'time': game_state['time'],
         })
         game_state.update(res)
+        game_state['wins'] = {game_state['players'][0] : 0}
 
     elif username == game_state['hanger']:
         remove_player(game_state, username)
