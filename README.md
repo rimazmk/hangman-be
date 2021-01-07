@@ -7,7 +7,7 @@ Backend for Hangman
 Create venv and install dependencies
 
 ```bash
-python3 -m venv env
+python3.8 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 ```
@@ -15,4 +15,4 @@ pip install -r requirements.txt
 ## Run
 
 ```bash
-flask run
+python wsgi.py
