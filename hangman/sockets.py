@@ -87,7 +87,7 @@ def on_leave(payload: Dict[str, str]):
     username, roomID = payload['user'], payload['roomID']
     print(f"{username} left {roomID}")
 
-    if roomID and exists(roomID):
+    if username and roomID and exists(roomID):
         game_state = get(roomID)
 
         if num_players(game_state) == 1:
