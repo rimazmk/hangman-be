@@ -5,7 +5,7 @@ import random
 import string
 from flask_socketio import emit, close_room, leave_room, join_room
 from .db import upsert, get, exists, delete
-from .game import (create_game, start_game, add_player, num_players,
+from .game import (create_game, remove_player, start_game, add_player, num_players,
                    handle_leave, handle_new_round, guess)
 from . import socketio, GameState
 
@@ -32,6 +32,37 @@ def create_game_handler(payload: Dict[str, str]):
     def_game_state = create_game(payload)
     upsert(roomID, def_game_state)
     emit('link', {'gameState': def_game_state, 'roomID': roomID})
+
+
+@socketio.on("new")
+def new_game_handler(payload: Dict[str, str]):
+    """Create roomID and GameState object for new game."""
+    while True:
+        roomID = ''.join(
+            random.choices(string.ascii_uppercase + string.digits, k=10))
+
+        if not exists(roomID):
+            break
+
+    gameState = get(payload['roomID'])
+    remove_player(gameState, payload['username'])
+    leave_room(payload['roomID'])
+    join_room(roomID)
+    print(f"{payload['username']} has entered the room: {roomID}")
+    def_game_state = create_game(payload['params'])
+    upsert(roomID, def_game_state)
+    emit('url', {'gameState': def_game_state, 'roomID': roomID})
+    emit('url', {'gameState': def_game_state,
+                 'roomID': roomID}, room=payload['roomID'])
+
+
+@socketio.on('join_new')
+def handle_join_new(credentials: Dict[str, str]):
+    """Add user to new room and remove from the old room"""
+    gameState = get(credentials['roomID'])
+    remove_player(gameState, credentials['user'])
+    leave_room(credentials['roomID'])
+    handle_join({"user": credentials['user'], "roomID": credentials['newID']})
 
 
 @socketio.on('newRound')
