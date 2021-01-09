@@ -130,9 +130,11 @@ def handle_new_round(game_state: GameState, category: str,
 def guess(game_state: GameState):
     """Handle player's guess."""
     cur = game_state['curGuess']
+    status = None
 
     if not cur:
         game_state['numIncorrect'] += 1
+        status = "timer"
 
     elif len(cur) == 1:
         game_state['guessedLetters'].append(cur)
@@ -147,12 +149,16 @@ def guess(game_state: GameState):
 
         if match == 0:
             game_state['numIncorrect'] += 1
+            status = "incorrect"
+        else:
+            status = "correct"
 
     else:
         game_state['guessedWords'].append(cur)
 
         if cur.lower() != game_state['word'].lower():
             game_state['numIncorrect'] += 1
+            status = "incorrect"
 
     if ((cur and cur.lower() == game_state['word'].lower())
             or game_state['numIncorrect'] == game_state['lives'] or
@@ -169,3 +175,4 @@ def guess(game_state: GameState):
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
     else:
         set_new_guesser(game_state)
+        return status

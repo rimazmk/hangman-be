@@ -76,8 +76,10 @@ def handle_start(roomID: str):
 def handle_guess(payload: Dict[str, Union[GameState, str]]):
     """Update GameState and send to all players."""
     game_state = payload['gameState']
-    guess(game_state)
+    status = guess(game_state)
+    # print(status)
     upsert(payload['roomID'], game_state)
+    emit('status', status, room=payload['roomID'])
     emit('update', game_state, room=payload['roomID'])
 
 
