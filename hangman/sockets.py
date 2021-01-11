@@ -14,7 +14,7 @@ from . import socketio, GameState
 def handle_message(info: Dict[str, str]):
     """Send new message to all players except the sender."""
     res = [info['user'], info['message']]
-    emit('chat', res, room=info['roomID'], include_self=False)
+    emit('chat', res, room=info['roomID'], include_self=True)
 
 
 @socketio.on("create")

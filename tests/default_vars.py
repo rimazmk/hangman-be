@@ -32,7 +32,7 @@ state = {
     'guessedWords': ['giraffe', 'ox', 'horse'],
     'guesser': "vthirupathi",
     'curGuess': "robin",
-    'guessedWord': "####a",
+    'guessedWord': "___a",
     'gameStart': True,
     'cap': 8,
     'rotation': 'robin',
