@@ -10,7 +10,7 @@ class TestGame(unittest.TestCase):
     def test_new_round_reset_guessed_word(self):
         obj = state.copy()
         game.handle_new_round(obj, "animals", "cat", "ngur")
-        self.assertEqual(obj['guessedWord'], '###')
+        self.assertEqual(obj['guessedWord'], '___')
 
     def test_new_round_hanger_robin(self):
         obj = state.copy()

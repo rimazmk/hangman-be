@@ -107,7 +107,7 @@ def handle_new_round(game_state: GameState, category: str,
     game_state['word'] = word
     game_state['category'] = category
     game_state['guessedWord'] = ''.join(
-        ['#' if c.isalnum() else c for c in word])
+        ['_' if c.isalnum() else c for c in word])
 
     if game_state['round']:
         if game_state['rotation'] == 'robin':
@@ -142,7 +142,7 @@ def guess(game_state: GameState):
 
         for i, (word_let, guess_let) in enumerate(
                 zip(game_state['word'], game_state['guessedWord'])):
-            if word_let.lower() == cur and guess_let == '#':
+            if word_let.lower() == cur and guess_let == '_':
                 game_state['guessedWord'] = game_state['guessedWord'][:i] + \
                     word_let + game_state['guessedWord'][i + 1:]
                 match += 1
