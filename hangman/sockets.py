@@ -33,27 +33,35 @@ def create_game_handler(payload: Dict[str, str]):
     upsert(roomID, def_game_state)
     emit('link', {'gameState': def_game_state, 'roomID': roomID})
 
+@socketio.on("newt")
+def newt_game_handler(payload: str):
+    """relay message of new game"""
+    print("newt")
+    emit('newt', "", room=payload)
+
 
 @socketio.on("new")
 def new_game_handler(payload: Dict[str, str]):
     """Create roomID and GameState object for new game."""
-    while True:
-        roomID = ''.join(
-            random.choices(string.ascii_uppercase + string.digits, k=10))
+    # while True:
+    #     roomID = ''.join(
+    #         random.choices(string.ascii_uppercase + string.digits, k=10))
 
-        if not exists(roomID):
-            break
-
-    gameState = get(payload['roomID'])
-    remove_player(gameState, payload['username'])
-    leave_room(payload['roomID'])
-    join_room(roomID)
-    print(f"{payload['username']} has entered the room: {roomID}")
+    #     if not exists(roomID):
+    #         break
+    player_list = get(payload['roomID'])['players']
+    # remove_player(gameState, payload['username'])
+    # leave_room(payload['roomID'])
+    # join_room(roomID)
+    # print(f"{payload['username']} has entered the room: {roomID}")
     def_game_state = create_game(payload['params'])
-    upsert(roomID, def_game_state)
-    emit('url', {'gameState': def_game_state, 'roomID': roomID})
-    emit('url', {'gameState': def_game_state,
-                 'roomID': roomID}, room=payload['roomID'])
+    for player in player_list:
+        if player != def_game_state['hanger']:
+            add_player(def_game_state, player)
+            
+    upsert(payload['roomID'], def_game_state)
+    print(get(payload['roomID']))
+    emit('url', def_game_state, room=payload['roomID'])
 
 
 @socketio.on('join_new')
