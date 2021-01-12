@@ -13,6 +13,9 @@ def create_game(params: Dict[str, str]) -> GameState:
     return {
         'players': [params['username']],
         'wins': {params['username']: 0},
+        'right': {params['username']: 0},
+        'wrong': {params['username']: 0},
+        'misses': {params['username']: 0},
         'hanger': params['username'],
         'category': "",
         'word': "",
@@ -41,7 +44,7 @@ def start_game(game_state: GameState) -> None:
 def add_player(game_state: GameState, user: str) -> None:
     """Add a new player to the game."""
     game_state['players'].append(user)
-    game_state['wins'][user] = 0
+    game_state['wins'][user] = game_state['right'][user] = game_state['wrong'][user] = game_state['misses'][user] = 0
 
 
 def remove_player(game_state: GameState, user: str) -> None:
@@ -49,6 +52,9 @@ def remove_player(game_state: GameState, user: str) -> None:
     try:
         game_state['players'].remove(user)
         game_state['wins'].pop(user)
+        game_state['right'].pop(user)
+        game_state['wrong'].pop(user)
+        game_state['misses'].pop(user)
         print(user, " has left the room")
     except (ValueError, KeyError):
         print("No user found named ", user)
@@ -85,7 +91,11 @@ def handle_leave(game_state: GameState, username: str) -> None:
             'time': time,
         })
         game_state.update(res)
+        # Is this necessary?
         game_state['wins'] = {game_state['players'][0]: 0}
+        game_state['right'] = {game_state['players'][0]: 0}
+        game_state['wrong'] = {game_state['players'][0]: 0}
+        game_state['misses'] = {game_state['players'][0]: 0}
 
     elif username == game_state['hanger']:
         remove_player(game_state, username)
@@ -134,6 +144,7 @@ def guess(game_state: GameState):
 
     if not cur:
         game_state['numIncorrect'] += 1
+        game_state['misses'][game_state['guesser']] += 1
         status = "timer"
 
     elif len(cur) == 1:
@@ -149,8 +160,10 @@ def guess(game_state: GameState):
 
         if match == 0:
             game_state['numIncorrect'] += 1
+            game_state['wrong'][game_state['guesser']] += 1
             status = "incorrect"
         else:
+            game_state['right'][game_state['guesser']] += 1
             status = "correct"
 
     else:
@@ -158,6 +171,7 @@ def guess(game_state: GameState):
 
         if cur.lower() != game_state['word'].lower():
             game_state['numIncorrect'] += 1
+            game_state['wrong'][game_state['guesser']] += 1
             status = "incorrect"
 
     if ((cur and cur.lower() == game_state['word'].lower())
