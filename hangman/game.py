@@ -173,6 +173,9 @@ def guess(game_state: GameState):
         game_state['category'] = game_state['curGuess'] = game_state[
             'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
+
+        status = "win"
     else:
         set_new_guesser(game_state)
-        return status
+
+    return status
