@@ -14,7 +14,8 @@ from . import socketio, GameState
 def handle_message(info: Dict[str, str]):
     """Send new message to all players."""
     res = [info['user'], info['message']]
-    emit('chat', res, room=info['roomID'])
+    include = info['user'] not in ["join", "leave"]
+    emit('chat', res, room=info['roomID'], include_self=include)
 
 
 @socketio.on("create")
@@ -103,6 +104,8 @@ def on_leave(payload: Dict[str, str]):
             leave_room(roomID)
             upsert(roomID, game_state)
             emit('leave', game_state, room=roomID)
+            handle_message(
+                {'user': 'leave', 'message': f"{username} has left", 'roomID': roomID})
 
 
 count = 0
