@@ -50,7 +50,7 @@ def remove_player(game_state: GameState, user: str) -> None:
         game_state['players'].remove(user)
         game_state['wins'].pop(user)
         print(user, " has left the room")
-    except (ValueError, KeyError) as error:
+    except (ValueError, KeyError):
         print("No user found named ", user)
 
 

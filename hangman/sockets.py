@@ -104,8 +104,11 @@ def on_leave(payload: Dict[str, str]):
             leave_room(roomID)
             upsert(roomID, game_state)
             emit('leave', game_state, room=roomID)
-            handle_message(
-                {'user': 'leave', 'message': f"{username} has left", 'roomID': roomID})
+            handle_message({
+                'user': 'leave',
+                'message': f"{username} has left",
+                'roomID': roomID
+            })
 
 
 count = 0

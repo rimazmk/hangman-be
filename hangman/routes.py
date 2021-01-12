@@ -20,7 +20,8 @@ def get_state():
         return abort(404)
     return abort(400)
 
+
 @app.route('/audio/<path:filename>')
 def download_file(filename):
-    print("here")
+    """Return audio file for game SFX."""
     return send_from_directory('../audio/', filename, as_attachment=True)
