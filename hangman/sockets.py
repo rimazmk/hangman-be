@@ -12,9 +12,9 @@ from . import socketio, GameState
 
 @socketio.on('chat')
 def handle_message(info: Dict[str, str]):
-    """Send new message to all players except the sender."""
+    """Send new message to all players."""
     res = [info['user'], info['message']]
-    emit('chat', res, room=info['roomID'], include_self=True)
+    emit('chat', res, room=info['roomID'])
 
 
 @socketio.on("create")

@@ -85,7 +85,7 @@ def handle_leave(game_state: GameState, username: str) -> None:
             'time': time,
         })
         game_state.update(res)
-        game_state['wins'] = {game_state['players'][0] : 0}
+        game_state['wins'] = {game_state['players'][0]: 0}
 
     elif username == game_state['hanger']:
         remove_player(game_state, username)
