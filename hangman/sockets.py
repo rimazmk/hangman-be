@@ -93,9 +93,6 @@ def on_leave(payload: Dict[str, str]):
         game_state = get(roomID)
 
         if num_players(game_state) == 1:
-            game_state['players'] = []
-            game_state['wins'] = {}
-            emit('leave', game_state, room=roomID)
             close_room(roomID)
             delete(roomID)
         else:
