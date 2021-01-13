@@ -91,7 +91,6 @@ def handle_leave(game_state: GameState, username: str) -> None:
             'time': time,
         })
         game_state.update(res)
-        # Is this necessary?
         game_state['wins'] = {game_state['players'][0]: 0}
         game_state['right'] = {game_state['players'][0]: 0}
         game_state['wrong'] = {game_state['players'][0]: 0}

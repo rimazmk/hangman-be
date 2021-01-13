@@ -13,8 +13,9 @@ from . import socketio, GameState
 @socketio.on('chat')
 def handle_message(info: Dict[str, str]):
     """Send new message to all players."""
-    res = [info['user'], info['message']]
-    include = info['user'] not in ["join", "leave"]
+    res = [info['user'], info['message'], info['effects']]
+    include = info['user'] not in ["join", "leave"] or (
+        info['user'] in ["join", "leave"] and not info['effects'])
     emit('chat', res, room=info['roomID'], include_self=include)
 
 
@@ -43,7 +44,7 @@ def new_round_handler(payload: Dict[str, str]):
     game_state = get(roomID)
     handle_new_round(game_state, category, word, user)
     upsert(roomID, game_state)
-    emit('response', game_state, room=roomID)
+    emit('update', game_state, room=roomID)
 
 
 @socketio.on('joinRoom')
@@ -103,7 +104,8 @@ def on_leave(payload: Dict[str, str]):
             handle_message({
                 'user': 'leave',
                 'message': f"{username} has left",
-                'roomID': roomID
+                'roomID': roomID,
+                'effects': True,
             })
 
 

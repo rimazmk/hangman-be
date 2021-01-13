@@ -1,7 +1,8 @@
 """Validate Rooms."""
 
 from flask import abort, request, send_from_directory
-from . import app
+from flask_mail import Message
+from . import app, mail
 from .db import exists, get
 
 
@@ -16,12 +17,22 @@ def get_state():
     if roomID and exists(roomID):
         return get(roomID)
     if roomID and len(roomID) == 10:
-        print("welp")
         return abort(404)
     return abort(400)
 
 
 @app.route('/audio/<path:filename>')
-def download_file(filename):
+def get_file(filename):
     """Return audio file for game SFX."""
     return send_from_directory('../audio/', filename, as_attachment=True)
+
+
+@app.route('/feedback/', methods=['POST'])
+def send_mail():
+    """Send feedback to site email."""
+    info = request.get_json()['data']
+    msg = Message(f"Feedback from {info['first']} {info['last']}", recipients=[
+                  'hangmanonlinefeedback@gmail.com'])
+    msg.body = f"{info['email']}\n\n{info['feedback']}"
+    mail.send(msg)
+    return "Sent"
