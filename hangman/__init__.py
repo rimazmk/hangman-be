@@ -25,7 +25,7 @@ app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail= Mail(app)
 mongo = PyMongo(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins=os.getenv("CLIENT_ORIGIN"))
 
 app.config['SECRET_KEY'] = b''.join([
     b'\x92\xc6\xd6',
@@ -35,7 +35,7 @@ app.config['SECRET_KEY'] = b''.join([
     b'\x8f\x03',
 ])
 
-cors = CORS(app, support_credentials=True)
+cors = CORS(app, support_credentials=True, origins=[os.getenv("CLIENT_ORIGIN")])
 socketio.init_app(app)
 
 
