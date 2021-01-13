@@ -33,43 +33,24 @@ def create_game_handler(payload: Dict[str, str]):
     upsert(roomID, def_game_state)
     emit('link', {'gameState': def_game_state, 'roomID': roomID})
 
+
 @socketio.on("new")
-def newt_game_handler(payload: str):
-    """relay message of new game"""
-    emit('new', "", room=payload)
+def new_game_handler(roomID: str):
+    """Relay message of new game."""
+    emit('new', room=roomID)
 
 
 @socketio.on("join_new")
-def new_game_handler(payload: Dict[str, str]):
+def join_new_game(payload: Dict[str, str]):
     """Create roomID and GameState object for new game."""
-    # while True:
-    #     roomID = ''.join(
-    #         random.choices(string.ascii_uppercase + string.digits, k=10))
-
-    #     if not exists(roomID):
-    #         break
     player_list = get(payload['roomID'])['players']
-    # remove_player(gameState, payload['username'])
-    # leave_room(payload['roomID'])
-    # join_room(roomID)
-    # print(f"{payload['username']} has entered the room: {roomID}")
     def_game_state = create_game(payload['params'])
     for player in player_list:
         if player != def_game_state['hanger']:
             add_player(def_game_state, player)
-            
+
     upsert(payload['roomID'], def_game_state)
-    print(get(payload['roomID']))
     emit('join_new', def_game_state, room=payload['roomID'])
-
-
-# @socketio.on('join_new')
-# def handle_join_new(credentials: Dict[str, str]):
-#     """Add user to new room and remove from the old room"""
-#     gameState = get(credentials['roomID'])
-#     remove_player(gameState, credentials['user'])
-#     leave_room(credentials['roomID'])
-#     handle_join({"user": credentials['user'], "roomID": credentials['newID']})
 
 
 @socketio.on('newRound')
