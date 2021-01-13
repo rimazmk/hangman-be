@@ -5,7 +5,7 @@ import random
 import string
 from flask_socketio import emit, close_room, leave_room, join_room
 from .db import upsert, get, exists, delete
-from .game import (create_game, start_game, add_player, num_players,
+from .game import (create_game, remove_player, start_game, add_player, num_players,
                    handle_leave, handle_new_round, guess)
 from . import socketio, GameState
 
@@ -34,6 +34,25 @@ def create_game_handler(payload: Dict[str, str]):
     def_game_state = create_game(payload)
     upsert(roomID, def_game_state)
     emit('link', {'gameState': def_game_state, 'roomID': roomID})
+
+
+@socketio.on("new")
+def new_game_handler(roomID: str):
+    """Relay message of new game."""
+    emit('new', room=roomID)
+
+
+@socketio.on("join_new")
+def join_new_game(payload: Dict[str, str]):
+    """Create roomID and GameState object for new game."""
+    player_list = get(payload['roomID'])['players']
+    def_game_state = create_game(payload['params'])
+    for player in player_list:
+        if player != def_game_state['hanger']:
+            add_player(def_game_state, player)
+
+    upsert(payload['roomID'], def_game_state)
+    emit('join_new', def_game_state, room=payload['roomID'])
 
 
 @socketio.on('newRound')
