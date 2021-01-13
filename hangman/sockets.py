@@ -99,6 +99,7 @@ def handle_guess(payload: Dict[str, Union[GameState, str]]):
     game_state = payload['gameState']
     status = guess(game_state)
     upsert(payload['roomID'], game_state)
+    # print(game_state['curGuess'])
     emit('status', {"status": status, "guess": game_state['curGuess']})
     emit('update', game_state, room=payload['roomID'])
 

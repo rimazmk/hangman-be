@@ -133,6 +133,7 @@ def handle_new_round(game_state: GameState, category: str,
         game_state['guesser'] = game_state['players'][guess_pos]
 
     game_state['numIncorrect'] = 0
+    game_state['curGuess'] = ""
     game_state['round'] += 1
 
 
@@ -178,16 +179,18 @@ def guess(game_state: GameState):
             game_state['word'].lower() == game_state['guessedWord'].lower()):
 
         if game_state['numIncorrect'] == game_state['lives']:
+            if not status:
+                status = "incorrect"
             game_state['wins'][game_state['hanger']] += 1
         else:
+            if not status:
+                status = "win"
             game_state['wins'][game_state['guesser']] += 1
 
         # TODO: Transition to newRound without relying on category
-        game_state['category'] = game_state['curGuess'] = game_state[
+        game_state['category'] = game_state[
             'guessedWord'] = ""
         game_state['guessedLetters'], game_state['guessedWords'] = [], []
-
-        status = "win"
     else:
         set_new_guesser(game_state)
 

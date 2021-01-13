@@ -31,7 +31,7 @@ def get_file(filename):
 def send_mail():
     """Send feedback to site email."""
     info = request.get_json()['data']
-    msg = Message(f"Feedback from {info['first']} {info['last']}", recipients=[
+    msg = Message(f"Feedback from {info['name']}", recipients=[
                   'hangmanonlinefeedback@gmail.com'])
     msg.body = f"{info['email']}\n\n{info['feedback']}"
     mail.send(msg)
