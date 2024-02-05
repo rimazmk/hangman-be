@@ -6,7 +6,7 @@ authors = ["Rimaz Khan <rimazk@umich.edu>", "Srihari Srinivasan <ssrihari@umich.
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.13"
+python = "^3.11"
 attrs = "20.3.0"
 bidict = "0.21.2"
 blinker = "1.4"
@@ -44,3 +44,6 @@ from = "."
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+test = "python -m unittest"
