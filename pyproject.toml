@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Backend for Hangmanonline.io"
 authors = ["Rimaz Khan <rimazk@umich.edu>", "Srihari Srinivasan <ssrihari@umich.edu>", "Vikhram Thirupathi <vikhramt@umich.edu>"]
 readme = "README.md"
+packages = [{include = "hangman"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -37,13 +38,9 @@ six = "1.15.0"
 toml = "0.10.2"
 werkzeug = "1.0.1"
 
-[[tool.poetry.packages]]
-include = "hangman"
-from = "."
+[tool.poetry.scripts]
+start = "wsgi:app"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-test = "python -m unittest"
