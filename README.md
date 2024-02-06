@@ -6,13 +6,21 @@ Backend for Hangman
 
 Create venv and install dependencies
 
+Note that this requires you to have installed [Poetry](https://python-poetry.org/docs/)
+
 ```bash
-python3.8 -m venv env
-source env/bin/activate
-pip install -r requirements.txt
+poetry shell
+poetry install
 ```
 
 ## Run
 
 ```bash
-python wsgi.py
+poetry run start
+```
+
+## Run Tests
+
+```bash
+poetry run python -m unittest
+```

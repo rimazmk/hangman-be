@@ -6,3 +6,4 @@ hangman.egg-info
 .idea/
 .DS_Store
 dump.rdb
+.venv/
